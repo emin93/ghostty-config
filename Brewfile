@@ -1,8 +1,9 @@
 tap "jundot/omlx", "https://github.com/jundot/omlx"
+tap "manaflow-ai/cmux"
 
 # CLI tools
 brew "stow"
-brew "starship"
+brew "micro"
 brew "ripgrep"
 brew "fd"
 brew "gh"
@@ -15,6 +16,7 @@ brew "mas"
 brew "aria2"
 brew "tokei"
 brew "webp"
+brew "hf"
 brew "jundot/omlx/omlx"
 
 # iOS/macOS dev
@@ -23,16 +25,12 @@ brew "xcbeautify"
 # Android dev
 cask "android-platform-tools"
 
-# Dev workspace
-cask "zed"
-
 # Native IDEs
 cask "android-studio"
 
 # AI
-cask "claude"
+cask "manaflow-ai/cmux/cmux"
 cask "claude-code@latest"
-cask "codex-app"
 cask "codex"
 
 # Browser & security

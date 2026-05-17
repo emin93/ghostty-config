@@ -15,12 +15,17 @@ REPO_OWNER="emin93"
 REPO_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}.git"
 REPO_SSH_URL="git@github.com:${REPO_OWNER}/${REPO_NAME}.git"
 REPO_DIR="${HOME}/Documents/Projects/${REPO_NAME}"
-STOW_PACKAGES=(git zsh zed bin)
+STOW_PACKAGES=(git zsh bin)
 PNPM_GLOBAL=(postiz wrangler @paddle/paddle-mcp)
 OP_ENV_ITEM="stack env"
 OP_ENV_MARKER_BEGIN="# >>> stack: 1password-managed env (do not edit) >>>"
 OP_ENV_MARKER_END="# <<< stack: 1password-managed env <<<"
-DJAY_APP_ID="450527929"
+
+MAS_APPS=(
+  "450527929:djay Pro"
+  "1569813296:1Password for Safari"
+  "1662217862:Wipr"
+)
 
 LOCAL_OVERRIDES=(
   "${HOME}/.gitconfig.local"
@@ -31,7 +36,6 @@ STOW_TARGETS=(
   "${HOME}/.gitconfig"
   "${HOME}/.hushlogin"
   "${HOME}/.zshrc"
-  "${HOME}/.config/zed/settings.json"
   "${HOME}/.local/bin/paddle-sandbox"
   "${HOME}/.local/bin/paddle-prod"
 )
@@ -150,22 +154,6 @@ step_pnpm_global() {
       fi
     fi
   done
-}
-
-step_zed_cli() {
-  step "Zed CLI"
-  local zed_cli="/Applications/Zed.app/Contents/MacOS/cli"
-  local target="/opt/homebrew/bin/zed"
-  if [[ ! -x "$zed_cli" ]]; then
-    warn "Zed.app not found at /Applications; skipping."
-    return
-  fi
-  if [[ -L "$target" && "$(readlink "$target")" == "$zed_cli" ]]; then
-    ok "already linked at $target."
-    return
-  fi
-  ln -sf "$zed_cli" "$target"
-  ok "linked $target -> $zed_cli"
 }
 
 step_gh_auth() {
@@ -424,7 +412,7 @@ step_secrets_from_1password() {
   if ! op item get "$OP_ENV_ITEM" --format=json >/dev/null 2>&1; then
     warn "1Password item '$OP_ENV_ITEM' not found."
     printf "    Create a Secure Note named '%s' with each secret as a concealed field\n" "$OP_ENV_ITEM"
-    printf "    whose label is the env var name (e.g. PADDLE_SANDBOX_API_KEY).\n"
+    printf "    whose label is the env var name (e.g. PADDLE_SANDBOX_API_KEY, HF_TOKEN).\n"
     return
   fi
   local exports
@@ -494,29 +482,49 @@ step_claude_mcp_servers() {
   fi
 }
 
-step_djay_pro() {
-  step "djay Pro"
+step_mas_apps() {
+  step "Mac App Store apps"
   if ! command -v mas >/dev/null 2>&1; then
     warn "mas not installed (expected from Brewfile); skipping."
     return
   fi
-  if mas list 2>/dev/null | awk '{print $1}' | grep -Fxq "$DJAY_APP_ID"; then
-    ok "already installed."
+
+  local installed
+  installed=$(mas list 2>/dev/null | awk '{print $1}' || true)
+  local missing=()
+  local entry app_id app_name
+  for entry in "${MAS_APPS[@]}"; do
+    app_id="${entry%%:*}"
+    app_name="${entry#*:}"
+    if grep -Fxq "$app_id" <<<"$installed"; then
+      ok "$app_name already installed."
+    else
+      missing+=("$entry")
+    fi
+  done
+
+  if [[ ${#missing[@]} -eq 0 ]]; then
     return
   fi
+
   local reply
-  warn "djay Pro installs through the Mac App Store and requires an Apple ID sign-in."
+  warn "Mac App Store apps require an Apple ID sign-in."
   open -a "App Store" >/dev/null 2>&1 || true
-  read -rp "    Sign in to the App Store, then press Enter to install djay Pro (or type 'skip'): " reply
+  read -rp "    Sign in to the App Store, then press Enter to install missing apps (or type 'skip'): " reply
   if [[ "$reply" == "skip" ]]; then
-    warn "skipping djay Pro install."
+    warn "skipping Mac App Store apps."
     return
   fi
-  if ! mas install "$DJAY_APP_ID"; then
-    warn "mas install failed (signed in to the App Store?); re-run when ready."
-    return
-  fi
-  ok "djay Pro installed."
+
+  for entry in "${missing[@]}"; do
+    app_id="${entry%%:*}"
+    app_name="${entry#*:}"
+    if mas install "$app_id"; then
+      ok "$app_name installed."
+    else
+      warn "couldn't install $app_name (signed in to the App Store?); re-run when ready."
+    fi
+  done
 }
 
 step_xcode() {
@@ -577,7 +585,6 @@ STEPS=(
   step_clone_repo
   step_brew_bundle
   step_pnpm_global
-  step_zed_cli
   step_gh_auth
   step_1password_ready
   step_1password_ssh
@@ -589,7 +596,7 @@ STEPS=(
   step_claude_signin
   step_codex_signin
   step_claude_mcp_servers
-  step_djay_pro
+  step_mas_apps
   step_xcode
 )
 STEP_TOTAL=${#STEPS[@]}

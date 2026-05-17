@@ -2,7 +2,7 @@
 [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # Editor
-export EDITOR="zed --wait"
+export EDITOR="micro"
 export VISUAL="$EDITOR"
 
 # 1Password SSH agent
@@ -20,6 +20,3 @@ esac
 
 # Machine-local overrides
 [[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
-
-# Prompt
-command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
