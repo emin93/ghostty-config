@@ -3,7 +3,7 @@ tap "manaflow-ai/cmux"
 
 # CLI tools
 brew "stow"
-brew "micro"
+brew "lazygit"
 brew "ripgrep"
 brew "fd"
 brew "gh"
